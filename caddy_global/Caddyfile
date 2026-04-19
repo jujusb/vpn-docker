@@ -1,0 +1,19 @@
+(common) {
+	encode gzip zstd
+}
+
+(common_tls) {
+	{$TLS_CONFIG}
+}
+
+https://{$VPN_ADMIN_SERVER_ADDRESS} {
+		import common
+		import common_tls
+
+        # since the container will share the network with wg-easy
+        # we can use the proper container name
+        reverse_proxy wg-easy:80 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+}
