@@ -8,25 +8,7 @@ ensure_network() {
     fi
 }
 ensure_network caddy_net
-ensure_network wg
 
-is_ip() {
-  [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
-}
-
-if [ "$MULTIPLE_CADDY_GLOBAL" = "true" ]; then
-    echo "Multiple global services enabled → using global Caddyfile"
-    export COMPOSE_FILE="docker-compose.yml"
-else
-    echo "Single global service → using local Caddyfile"
-    export COMPOSE_FILE="docker-compose.yml:docker-compose.root-caddy.yml"
-    if is_ip "$SERVER_ADDRESS"; then
-        echo "Detected IP → using internal TLS"
-        export TLS_CONFIG='tls internal'
-    else
-        echo "Detected domain → using Cloudflare TLS"
-        export TLS_CONFIG='tls { dns cloudflare {env.CF_API_TOKEN} }'
-    fi
-fi
+export COMPOSE_FILE="docker-compose.yml"
 docker compose $@
 unset COMPOSE_FILE

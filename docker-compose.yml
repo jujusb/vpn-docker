@@ -1,39 +1,29 @@
-volumes:
-  etc_wireguard:
-
 services:
-  wg-easy:
-    environment:
-      - PORT=80
-      - HOST=0.0.0.0
-      - INSECURE=false
-      - DISABLE_IPV6=true
-      - INIT_ENABLED=true
-      - INIT_USERNAME=${ADMIN_USERNAME:-}
-      - INIT_PASSWORD=${ADMIN_PASSWORD:-}
-      - INIT_HOST=${VPN_SERVER_ADDRESS:-}
-      - INIT_PORT=${VPN_SERVER_PORT:-}
-      - INIT_DNS=1.1.1.1,8.8.8.8
-    image: ghcr.io/wg-easy/wg-easy:15
-    container_name: wg-easy
-    networks:
-      wg:
-      caddy_net:
-    volumes:
-      - etc_wireguard:/etc/wireguard
-      - /lib/modules:/lib/modules:ro
-    ports:
-      - "${VPN_SERVER_PORT:-}:${VPN_SERVER_PORT:-}/udp"
-    restart: unless-stopped
+  tailscale_web:
+    image: tailscale/tailscale:latest
+    restart: on-failure
+    stop_grace_period: 1m
     cap_add:
       - NET_ADMIN
-      - SYS_MODULE
+    devices:
+      - /dev/net/tun:/dev/net/tun
     sysctls:
       - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1
-      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.all.forwarding=1
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTH_ONCE=true
+      - TS_ROUTES=${TS_ROUTES:-172.21.0.0/16,172.23.0.0/16}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_EXTRA_ARGS=--advertise-exit-node
+    volumes:
+       - ${BASE_DATA_PATH:-./data}/tailscale:/var/lib/tailscale
+    container_name: tailscale_web
+    networks:
+      - caddy_net
+
 networks:
   caddy_net:
-    external: true
-  wg:
     external: true
